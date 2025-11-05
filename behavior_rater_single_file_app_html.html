@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Behavior Rater</title>
+<style>
+  :root{
+    --bg:#0d1117;         /* neutral background */
+    --panel:#111827;      /* panel background */
+    --muted:#6b7280;      /* gray-500 */
+    --text:#e5e7eb;       /* gray-200 */
+    --accent:#8b5cf6;     /* violet-500 */
+    --accent-2:#22d3ee;   /* cyan-400 */
+    --ok:#16a34a;         /* green-600 */
+    --mid:#ca8a04;        /* yellow-600 */
+    --bad:#dc2626;        /* red-600 */
+    --outline:#1f2937;    /* gray-800 */
+    --chip:#0b1220;       /* darker chip */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:linear-gradient(180deg, #0b1020 0%, #0a0d14 100%);
+    color:var(--text);font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
+  }
+  .app{display:grid;grid-template-rows:auto 1fr;min-height:100vh}
+  header{
+    position:sticky;top:0;z-index:10;background:rgba(10,13,20,.8);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--outline);padding:.75rem 1rem;display:flex;gap:.75rem;align-items:center;justify-content:space-between
+  }
+  .title{display:flex;gap:.75rem;align-items:center;font-weight:700;letter-spacing:.2px}
+  .title .logo{width:28px;height:28px;border-radius:8px;background:conic-gradient(from 210deg, var(--accent), var(--accent-2));box-shadow:0 0 24px rgba(139,92,246,.35)}
+  .pill{padding:.25rem .6rem;border:1px solid var(--outline);border-radius:999px;color:var(--muted);font-size:.8rem}
+  .grid{
+    display:grid;gap:1rem;padding:1rem;grid-template-columns:420px 1fr;align-items:start
+  }
+  .panel{background:var(--panel);border:1px solid var(--outline);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.25)}
+  .panel h3{margin:0 0 .25rem 0;font-size:1rem;font-weight:700}
+  .panel .sub{color:var(--muted);font-size:.9rem}
+  .p16{padding:16px}
+  .p20{padding:20px}
+  .mb8{margin-bottom:8px}
+  .mb12{margin-bottom:12px}
+  .mb16{margin-bottom:16px}
+  .mb24{margin-bottom:24px}
+  .row{display:flex;gap:.5rem;align-items:center}
+  .rowb{display:flex;gap:.75rem;align-items:center;justify-content:space-between}
+  .col{display:flex;flex-direction:column;gap:.5rem}
+  .btn{
+    user-select:none;cursor:pointer;border:1px solid var(--outline);background:#0b1220;color:var(--text);
+    padding:.85rem 1rem;border-radius:12px;font-weight:700;letter-spacing:.2px;display:inline-flex;gap:.6rem;align-items:center;justify-content:center;
+    transition:transform .06s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease
+  }
+  .btn:hover{transform:translateY(-1px);border-color:#2a3748}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{background:transparent}
+  .btn.small{padding:.5rem .6rem;border-radius:10px;font-weight:600}
+  .btn.block{width:100%}
+  .btn.ok{background:linear-gradient(180deg, rgba(22,163,74,.25), rgba(22,163,74,.15));border-color:rgba(22,163,74,.55)}
+  .btn.mid{background:linear-gradient(180deg, rgba(202,138,4,.25), rgba(202,138,4,.15));border-color:rgba(202,138,4,.55)}
+  .btn.bad{background:linear-gradient(180deg, rgba(220,38,38,.25), rgba(220,38,38,.15));border-color:rgba(220,38,38,.55)}
+  .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;border:1px solid var(--outline);background:var(--chip);padding:.2rem .45rem;border-radius:8px;font-size:.8rem;color:#cbd5e1}
+  .muted{color:var(--muted)}
+  .progress{height:10px;background:#0a0f19;border:1px solid #101826;border-radius:999px;overflow:hidden}
+  .bar{height:100%;width:0;background:linear-gradient(90deg, var(--accent), var(--accent-2));box-shadow:0 0 14px rgba(34,211,238,.4) inset;transition:width .25s ease}
+  .card{background:#0b1220;border:1px dashed #1e293b;border-radius:14px;padding:14px}
+  textarea,input,select{background:#0b1220;border:1px solid #1e293b;color:#cbd5e1;border-radius:12px;padding:.75rem;font-size:.95rem;outline:none}
+  textarea:focus,input:focus,select:focus{border-color:#2a3748;box-shadow:0 0 0 3px rgba(139,92,246,.25)}
+  .two-col{display:grid;gap:1rem;grid-template-columns:1fr 1fr}
+  .stack{display:flex;flex-direction:column;gap:.75rem}
+  .rating-tag{font-size:.8rem;border-radius:999px;padding:.25rem .5rem;display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--outline);background:var(--chip)}
+  .chiplist{display:flex;flex-wrap:wrap;gap:.4rem}
+  .okc{color:#86efac;border-color:rgba(22,163,74,.5);background:rgba(22,163,74,.08)}
+  .midc{color:#fde68a;border-color:rgba(202,138,4,.5);background:rgba(202,138,4,.08)}
+  .badc{color:#fecaca;border-color:rgba(220,38,38,.5);background:rgba(220,38,38,.08)}
+  .comp{border:1px solid var(--outline);border-radius:14px;padding:12px;background:#0c1322}
+  .comp header{display:flex;gap:.5rem;align-items:center;justify-content:space-between}
+  .comp h4{margin:.25rem 0;font-size:1rem}
+  .comp .stats{font-size:.8rem;color:#cbd5e1}
+  .beh-list{display:flex;flex-direction:column;gap:.35rem;margin-top:.5rem}
+  .beh{display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border:1px solid #1e293b;border-radius:10px;background:#0a0f19}
+  .beh .handle{cursor:grab;opacity:.7}
+  .beh.dragging{opacity:.5}
+  .beh .dot{width:8px;height:8px;border-radius:999px}
+  .beh.always .dot{background:var(--ok)}
+  .beh.sometimes .dot{background:var(--mid)}
+  .beh.rarely .dot{background:var(--bad)}
+  .divider{height:1px;background:var(--outline);margin:.75rem 0}
+  .section h3{margin:.25rem 0 .25rem 0}
+  .hint{font-size:.85rem;color:#a3aab6}
+  .hotkeys{display:flex;gap:.5rem;align-items:center}
+  .hotkeys .map{display:flex;gap:.35rem;align-items:center;border:1px solid var(--outline);background:#0b1220;padding:.25rem .5rem;border-radius:10px}
+  .badge{font-size:.75rem;border:1px solid var(--outline);background:#0b1220;color:#cbd5e1;border-radius:999px;padding:.15rem .5rem}
+  .switch{display:inline-flex;align-items:center;gap:.5rem}
+  .switch input{width:42px;height:22px;appearance:none;background:#1f2937;border-radius:999px;position:relative;outline:none;cursor:pointer;border:1px solid #2a3748}
+  .switch input:checked{background:linear-gradient(90deg, var(--accent), var(--accent-2))}
+  .switch input:before{content:"";position:absolute;left:2px;top:2px;width:18px;height:18px;background:#0b1220;border-radius:999px;transition:left .18s ease}
+  .switch input:checked:before{left:22px}
+  .notice{border:1px solid #204a33;background:rgba(22,163,74,.08);padding:.6rem .75rem;border-radius:10px;color:#cdebd6}
+  .warn{border:1px solid #4a2a20;background:rgba(220,38,38,.08);padding:.6rem .75rem;border-radius:10px;color:#f9d6d1}
+  .ghost-sep{opacity:.6}
+  .sr{position:absolute;left:-9999px}
+  .footer{color:#94a3b8;font-size:.85rem;display:flex;gap:.5rem;align-items:center}
+  .footer a{color:#a3e3ff}
+  @media (max-width: 1100px){
+    .grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">
+      <div class="logo" aria-hidden="true"></div>
+      <div>Behavior Rater</div>
+      <span class="pill">single‑file • local‑only</span>
+    </div>
+    <div class="row">
+      <button id="btn-reset" class="btn ghost small" title="Clear app data">Reset</button>
+      <button id="btn-copy-md" class="btn small" title="Copy Markdown summary">Copy Markdown</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: Import + Rating -->
+    <div class="panel p16" id="leftCol">
+      <div class="stack">
+        <section class="import p16 panel" style="background:#0a0f19;border:1px dashed #243042;border-radius:12px">
+          <h3>1) Paste CSV of behaviors</h3>
+          <div class="sub mb12">Columns: <strong>competency, behavior</strong>. Header row optional. One behavior per row.</div>
+          <textarea id="csv-input" rows="6" placeholder="Example:\nCompetency,Behavior\nCommunication,Explains decisions clearly\nCommunication,Adapts message to audience\nOwnership,Meets commitments reliably\nOwnership,Flags risks early\n..." spellcheck="false"></textarea>
+          <div class="rowb mt12">
+            <div class="row">
+              <button id="btn-load" class="btn">Load CSV</button>
+              <button id="btn-sample" class="btn ghost">Load Sample</button>
+            </div>
+            <div class="hint">Data auto‑saves to your browser (localStorage).</div>
+          </div>
+        </section>
+
+        <section class="rating p16 panel">
+          <div class="rowb mb8">
+            <h3>2) Rate behaviors</h3>
+            <div class="hotkeys hint">
+              <div class="map"><span class="kbd">J</span> Always</div>
+              <div class="map"><span class="kbd">K</span> Sometimes</div>
+              <div class="map"><span class="kbd">L</span> Rarely</div>
+            </div>
+          </div>
+
+          <div id="rateCard" class="card">
+            <div id="rc-competency" class="muted" style="letter-spacing:.3px;text-transform:uppercase;font-weight:600"></div>
+            <div id="rc-behavior" style="font-size:1.35rem;font-weight:800;line-height:1.4;margin:.25rem 0 .5rem 0;min-height:3.5rem">—</div>
+            <div class="row mb12">
+              <span class="badge" id="rc-index">0 / 0</span>
+              <span class="badge" id="rc-complete">0% complete</span>
+              <span class="badge" id="rc-competency-progress">—</span>
+              <span class="badge" id="rc-queue-mode">By competency</span>
+            </div>
+            <div class="two-col mb12">
+              <button class="btn ok block" id="btn-always">Always <span class="kbd">J</span></button>
+              <button class="btn mid block" id="btn-sometimes">Sometimes <span class="kbd">K</span></button>
+            </div>
+            <button class="btn bad block mb12" id="btn-rarely">Rarely / Less than expected <span class="kbd">L</span></button>
+
+            <div class="rowb">
+              <div class="row">
+                <button class="btn ghost small" id="btn-back" title="Back one">◀ Back</button>
+                <button class="btn ghost small" id="btn-skip" title="Skip unrated">Skip ▶</button>
+                <button class="btn ghost small" id="btn-clear" title="Clear rating">Clear ⌫</button>
+              </div>
+              <label class="switch hint" title="Advance automatically after rating">
+                <input type="checkbox" id="auto-advance" checked />
+                <span>Auto‑advance</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="mb8"></div>
+          <div class="progress" aria-label="overall progress"><div id="prog" class="bar"></div></div>
+        </section>
+
+        <section class="p16 panel" id="reorderHelp">
+          <h3>3) Importance order (drag to reorder)</h3>
+          <div class="sub mb12">Open any competency on the right and toggle <em>Reorder</em> to drag behaviors up/down. This affects the rating queue order. The summary list is still sorted by rating unless you toggle it off.</div>
+          <div class="notice">Tip: While rating, you can also reorder in a competency without losing your place; the queue updates live.</div>
+        </section>
+      </div>
+    </div>
+
+    <!-- RIGHT: Live Summary / Output -->
+    <div class="panel p16" id="rightCol">
+      <div class="rowb mb12">
+        <div>
+          <h3>Live Summary</h3>
+          <div class="sub">Updates instantly with each rating. Export a Markdown report anytime.</div>
+        </div>
+        <div class="row">
+          <label class="switch hint" title="Sort behaviors by rating in the summary view">
+            <input type="checkbox" id="toggle-sort-by-rating" checked>
+            <span>Sort behaviors by rating</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel p16" style="background:#0a0f19;border:1px dashed #243042;border-radius:12px">
+        <div class="rowb">
+          <div class="row">
+            <div class="col">
+              <label for="thr-strength" class="hint">Strength threshold (% Always)</label>
+              <input id="thr-strength" type="range" min="40" max="100" step="1" value="70" />
+            </div>
+            <div class="col">
+              <label for="thr-dev" class="hint">Development threshold (% Rarely)</label>
+              <input id="thr-dev" type="range" min="20" max="100" step="1" value="40" />
+            </div>
+          </div>
+          <div class="chiplist">
+            <span class="rating-tag okc"><strong id="tStrength">70</strong>% Always → Strengths</span>
+            <span class="rating-tag badc"><strong id="tDev">40</strong>% Rarely → Dev Opps</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="summary" class="stack mt12">
+        <!-- Populated dynamically -->
+      </div>
+
+      <div class="divider"></div>
+      <div class="footer">
+        <span>Local save key:</span>
+        <code id="save-key" style="background:#0b1220;border:1px solid #1e293b;padding:.2rem .4rem;border-radius:6px">behavior-rater-v1</code>
+        <span class="ghost-sep">•</span>
+        <span>Keyboard: <span class="kbd">J</span>/<span class="kbd">K</span>/<span class="kbd">L</span> • Back: <span class="kbd">B</span> • Skip: <span class="kbd">S</span> • Clear: <span class="kbd">U</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'behavior-rater-v1';
+  const els = {
+    csvInput: document.getElementById('csv-input'),
+    btnLoad: document.getElementById('btn-load'),
+    btnSample: document.getElementById('btn-sample'),
+    btnReset: document.getElementById('btn-reset'),
+    btnCopyMd: document.getElementById('btn-copy-md'),
+    rateCard: document.getElementById('rateCard'),
+    rcCompetency: document.getElementById('rc-competency'),
+    rcBehavior: document.getElementById('rc-behavior'),
+    rcIndex: document.getElementById('rc-index'),
+    rcComplete: document.getElementById('rc-complete'),
+    rcCompetencyProgress: document.getElementById('rc-competency-progress'),
+    rcQueueMode: document.getElementById('rc-queue-mode'),
+    btnAlways: document.getElementById('btn-always'),
+    btnSometimes: document.getElementById('btn-sometimes'),
+    btnRarely: document.getElementById('btn-rarely'),
+    btnBack: document.getElementById('btn-back'),
+    btnSkip: document.getElementById('btn-skip'),
+    btnClear: document.getElementById('btn-clear'),
+    autoAdvance: document.getElementById('auto-advance'),
+    prog: document.getElementById('prog'),
+    thrStrength: document.getElementById('thr-strength'),
+    thrDev: document.getElementById('thr-dev'),
+    tStrength: document.getElementById('tStrength'),
+    tDev: document.getElementById('tDev'),
+    toggleSortByRating: document.getElementById('toggle-sort-by-rating'),
+    summary: document.getElementById('summary')
+  };
+
+  /*** STATE ***/
+  let state = {
+    competencies: [], // [{id, name, behaviors:[{id, text, rating:null|'always'|'sometimes'|'rarely', order:number}]}]
+    orderMode: 'byCompetency', // future extension
+    cursor: { compIdx: 0, behIdx: 0, history: [] },
+    thresholds: { strength: 70, dev: 40 },
+    sortByRatingInSummary: true,
+  };
+
+  // Load persisted state
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      if(saved && saved.competencies){ state = Object.assign(state, saved); }
+      els.thrStrength.value = state.thresholds.strength;
+      els.thrDev.value = state.thresholds.dev;
+      els.tStrength.textContent = state.thresholds.strength;
+      els.tDev.textContent = state.thresholds.dev;
+      els.toggleSortByRating.checked = !!state.sortByRatingInSummary;
+    }
+  } catch(e) { console.warn('Failed to parse saved state', e); }
+
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function uid(){ return Math.random().toString(36).slice(2, 10); }
+
+  /** CSV Parser (handles quotes) */
+  function parseCSV(text){
+    const rows = [];
+    let i=0, field='', row=[], inQuotes=false;
+    function endField(){ row.push(field); field=''; }
+    function endRow(){ rows.push(row); row=[]; }
+    while(i<text.length){
+      const c=text[i];
+      if(inQuotes){
+        if(c==='"'){
+          if(text[i+1]==='"'){ field+='"'; i+=2; continue; } // escaped quote
+          inQuotes=false; i++; continue;
+        } else { field+=c; i++; continue; }
+      } else {
+        if(c==='"'){ inQuotes=true; i++; continue; }
+        if(c===','){ endField(); i++; continue; }
+        if(c==='\n' || c==='\r'){ if(c==='\r' && text[i+1]==='\n') i++; endField(); endRow(); i++; continue; }
+        field+=c; i++; continue;
+      }
+    }
+    if(field!=='' || row.length){ endField(); endRow(); }
+    return rows.filter(r => r.length && r.some(v => String(v).trim()!==''));
+  }
+
+  function loadFromCSV(text){
+    const rows = parseCSV(text);
+    if(!rows.length){ alert('No rows detected. Ensure CSV includes at least two columns: competency, behavior.'); return; }
+    // Detect header
+    const header = rows[0].map(x=>x.trim().toLowerCase());
+    const hasHeader = header.includes('competency') || header.includes('behavior');
+    const dataRows = hasHeader ? rows.slice(1) : rows;
+
+    const map = new Map();
+    for(const r of dataRows){
+      const comp = (r[0]||'').trim();
+      const beh = (r[1]||'').trim();
+      if(!comp || !beh) continue;
+      if(!map.has(comp)) map.set(comp, []);
+      map.get(comp).push(beh);
+    }
+    const comps = [];
+    for(const [name, behs] of map.entries()){
+      comps.push({
+        id: uid(),
+        name,
+        behaviors: behs.map((b,idx)=>({ id: uid(), text: b, rating: null, order: idx }))
+      });
+    }
+    // sort competencies alphabetically for predictability
+    comps.sort((a,b)=>a.name.localeCompare(b.name));
+    state.competencies = comps;
+    state.cursor = { compIdx: 0, behIdx: 0, history: [] };
+    save();
+    renderAll();
+  }
+
+  function loadSample(){
+    const sample = `Competency,Behavior\nCommunication,Explains decisions clearly\nCommunication,Adapts message to audience\nCommunication,Actively listens and reflects back\nOwnership,Meets commitments reliably\nOwnership,Flags risks early\nOwnership,Raises hand for ambiguous work\nTechnical Acumen,Chooses appropriate level of rigor\nTechnical Acumen,Builds simple, maintainable solutions\nLeadership,Creates psychological safety\nLeadership,Gives timely, specific feedback`;
+    els.csvInput.value = sample;
+  }
+
+  /*** RATING FLOW ***/
+  function getAllBehaviors(){
+    return state.competencies.flatMap((c,ci)=> c.behaviors.map((b,bi)=>({c,ci,b,bi})) );
+  }
+
+  function getTotals(){
+    const all = getAllBehaviors();
+    const rated = all.filter(x=>x.b.rating);
+    return { total: all.length, rated: rated.length };
+  }
+
+  function nextUnratedWithinComp(ci){
+    const c = state.competencies[ci];
+    if(!c) return null;
+    const sorted = [...c.behaviors].sort((a,b)=>a.order-b.order);
+    for(let bi=0; bi<sorted.length; bi++){
+      const actualIndex = c.behaviors.findIndex(x=>x.id===sorted[bi].id);
+      if(!sorted[bi].rating) return {ci, bi: actualIndex};
+    }
+    return null;
+  }
+
+  function findNext(){
+    // Progress within current competency; if finished, move to next competency with remaining items
+    const { compIdx } = state.cursor;
+    let n = nextUnratedWithinComp(compIdx);
+    if(n) return n;
+    for(let i=0;i<state.competencies.length;i++){
+      const idx = (compIdx + i + 1) % state.competencies.length;
+      n = nextUnratedWithinComp(idx);
+      if(n) return n;
+    }
+    // If everything rated, stay at last selection
+    return { ci: state.cursor.compIdx, bi: state.cursor.behIdx };
+  }
+
+  function setCursor(ci,bi){
+    state.cursor.compIdx = ci;
+    state.cursor.behIdx = bi;
+    save();
+    renderRateCard();
+  }
+
+  function rateCurrent(value){
+    const c = state.competencies[state.cursor.compIdx];
+    if(!c) return;
+    const b = c.behaviors[state.cursor.behIdx];
+    if(!b) return;
+    const prev = b.rating;
+    b.rating = value; // 'always' | 'sometimes' | 'rarely'
+    state.cursor.history.push({ ci: state.cursor.compIdx, bi: state.cursor.behIdx, prev });
+    save();
+    renderAll();
+    if(els.autoAdvance.checked){ const n = findNext(); setCursor(n.ci, n.bi); }
+  }
+
+  function backOne(){
+    const last = state.cursor.history.pop();
+    if(!last){ return; }
+    setCursor(last.ci, last.bi);
+  }
+
+  function skipOne(){
+    const n = findNext();
+    setCursor(n.ci, n.bi);
+  }
+
+  function clearCurrent(){
+    const c = state.competencies[state.cursor.compIdx];
+    const b = c?.behaviors[state.cursor.behIdx];
+    if(!b) return;
+    b.rating = null;
+    save();
+    renderAll();
+  }
+
+  /*** SUMMARY COMPUTE ***/
+  function compStats(c){
+    const total = c.behaviors.length;
+    const counts = { always:0, sometimes:0, rarely:0, unrated:0 };
+    for(const b of c.behaviors){
+      if(!b.rating) counts.unrated++;
+      else counts[b.rating]++;
+    }
+    const rated = total - counts.unrated;
+    const pct = {
+      always: rated ? Math.round(100*counts.always/rated) : 0,
+      sometimes: rated ? Math.round(100*counts.sometimes/rated) : 0,
+      rarely: rated ? Math.round(100*counts.rarely/rated) : 0,
+      completeness: total ? Math.round(100*rated/total) : 0,
+    };
+    return { total, counts, pct, rated };
+  }
+
+  function categorize(c, thresholds){
+    const s = compStats(c);
+    if(s.rated===0) return 'unrated';
+    if(s.pct.always >= thresholds.strength) return 'strength';
+    if(s.pct.rarely >= thresholds.dev) return 'development';
+    return 'mixed';
+  }
+
+  /*** RENDER ***/
+  function renderRateCard(){
+    const c = state.competencies[state.cursor.compIdx];
+    if(!c){
+      els.rcCompetency.textContent = '';
+      els.rcBehavior.textContent = 'Load a CSV above to begin.';
+      els.rcIndex.textContent = '0 / 0';
+      els.rcComplete.textContent = '0% complete';
+      els.rcCompetencyProgress.textContent = '—';
+      els.prog.style.width = '0%';
+      return;
+    }
+    const b = c.behaviors[state.cursor.behIdx];
+    els.rcCompetency.textContent = c.name;
+    els.rcBehavior.textContent = b ? b.text : 'All behaviors are rated in this competency.';
+    const totals = getTotals();
+    els.rcIndex.textContent = `${totals.rated} / ${totals.total}`;
+    const pct = totals.total ? Math.round(100 * totals.rated / totals.total) : 0;
+    els.rcComplete.textContent = `${pct}% complete`;
+    els.prog.style.width = pct + '%';
+    const st = compStats(c);
+    els.rcCompetencyProgress.textContent = `${st.pct.completeness}% ${c.name}`;
+    els.rcQueueMode.textContent = 'By competency';
+  }
+
+  function behaviorClasses(r){
+    if(r==='always') return 'beh always';
+    if(r==='sometimes') return 'beh sometimes';
+    if(r==='rarely') return 'beh rarely';
+    return 'beh';
+  }
+
+  function renderSummary(){
+    const wrap = els.summary;
+    wrap.innerHTML = '';
+    if(!state.competencies.length){
+      const empty = document.createElement('div');
+      empty.className = 'warn';
+      empty.textContent = 'No data loaded. Paste CSV at left and click Load CSV.';
+      wrap.appendChild(empty);
+      return;
+    }
+
+    const groups = { strength:[], development:[], mixed:[], unrated:[] };
+    for(const c of state.competencies){
+      const cat = categorize(c, state.thresholds);
+      groups[cat].push(c);
+    }
+
+    function compBlock(list, title, colorClass){
+      if(!list.length) return;
+      const section = document.createElement('div');
+      section.className = 'section';
+      const h = document.createElement('h3');
+      h.textContent = title;
+      section.appendChild(h);
+
+      for(const c of list){
+        const stats = compStats(c);
+        const compEl = document.createElement('div');
+        compEl.className = 'comp';
+
+        const head = document.createElement('header');
+        const h4 = document.createElement('h4'); h4.textContent = c.name; head.appendChild(h4);
+        const right = document.createElement('div'); right.className='chiplist';
+        right.innerHTML = `
+          <span class="rating-tag okc">Always ${stats.counts.always} (${stats.pct.always}%)</span>
+          <span class="rating-tag midc">Sometimes ${stats.counts.sometimes} (${stats.pct.sometimes}%)</span>
+          <span class="rating-tag badc">Rarely ${stats.counts.rarely} (${stats.pct.rarely}%)</span>
+          <span class="badge">Rated ${stats.rated}/${stats.total}</span>
+        `;
+        head.appendChild(right);
+
+        const controls = document.createElement('div');
+        controls.className = 'row';
+        const reorderBtn = document.createElement('button');
+        reorderBtn.className = 'btn ghost small';
+        reorderBtn.textContent = 'Reorder';
+        const sortHint = document.createElement('span'); sortHint.className='hint'; sortHint.textContent = 'Drag to change importance';
+        controls.appendChild(reorderBtn); controls.appendChild(sortHint);
+        head.appendChild(controls);
+
+        compEl.appendChild(head);
+
+        const listEl = document.createElement('div'); listEl.className = 'beh-list'; listEl.dataset.compId = c.id;
+
+        // Choose order for display
+        let behs = [...c.behaviors];
+        if(state.sortByRatingInSummary){
+          const rank = { always:0, sometimes:1, rarely:2 };
+          behs.sort((a,b)=>{
+            const ra = (a.rating==null)? 3 : rank[a.rating];
+            const rb = (b.rating==null)? 3 : rank[b.rating];
+            if(ra!==rb) return ra-rb;
+            // tie-breaker: original importance
+            return a.order - b.order;
+          });
+        } else {
+          behs.sort((a,b)=> a.order - b.order);
+        }
+
+        for(const b of behs){
+          const item = document.createElement('div');
+          item.className = behaviorClasses(b.rating);
+          item.draggable = false; // enabled when in reorder mode
+          item.dataset.behId = b.id;
+          item.innerHTML = `
+            <span class="handle" title="Drag" aria-hidden="true">⋮⋮</span>
+            <span class="dot" aria-hidden="true"></span>
+            <div class="text">${escapeHtml(b.text)}</div>
+            <div style="margin-left:auto" class="hint">${b.rating?b.rating:''}</div>
+          `;
+          listEl.appendChild(item);
+        }
+
+        compEl.appendChild(listEl);
+
+        // Enable/disable drag mode
+        let dragMode = false; let dragSrc = null;
+        reorderBtn.addEventListener('click', ()=>{
+          dragMode = !dragMode;
+          reorderBtn.textContent = dragMode? 'Done' : 'Reorder';
+          listEl.querySelectorAll('.beh').forEach(el=>{
+            el.draggable = dragMode;
+            el.style.borderStyle = dragMode? 'solid' : 'solid';
+            el.style.cursor = dragMode? 'grab' : 'default';
+            el.querySelector('.handle').style.opacity = dragMode? '1' : '.35';
+          });
+        });
+
+        listEl.addEventListener('dragstart', (e)=>{
+          if(!dragMode) { e.preventDefault(); return; }
+          const t = e.target.closest('.beh');
+          if(!t) return;
+          dragSrc = t;
+          t.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', t.dataset.behId); } catch(_){ }
+        });
+        listEl.addEventListener('dragover', (e)=>{
+          if(!dragMode) return;
+          e.preventDefault();
+          const after = getDragAfterElement(listEl, e.clientY);
+          const dragging = listEl.querySelector('.dragging');
+          if(!dragging) return;
+          if(after==null) listEl.appendChild(dragging); else listEl.insertBefore(dragging, after);
+        });
+        listEl.addEventListener('drop', (e)=>{
+          if(!dragMode) return;
+          e.preventDefault(); finalizeOrder(c, listEl);
+        });
+        listEl.addEventListener('dragend', ()=>{
+          const d = listEl.querySelector('.dragging'); if(d) d.classList.remove('dragging');
+          if(dragMode) finalizeOrder(c, listEl);
+        });
+
+        section.appendChild(compEl);
+      }
+
+      wrap.appendChild(section);
+    }
+
+    compBlock(groups.strength, 'Strengths', 'okc');
+    compBlock(groups.development, 'Development Opportunities', 'badc');
+    compBlock(groups.mixed, 'Mixed', 'midc');
+    compBlock(groups.unrated, 'Unrated', '');
+  }
+
+  function getDragAfterElement(container, y){
+    const els = [...container.querySelectorAll('.beh:not(.dragging)')];
+    return els.reduce((closest, child)=>{
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height/2;
+      if(offset < 0 && offset > closest.offset){ return { offset, element: child }; }
+      else return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  function finalizeOrder(comp, listEl){
+    const idsInDom = [...listEl.querySelectorAll('.beh')].map(el=>el.dataset.behId);
+    // Apply new order indices
+    const map = new Map(idsInDom.map((id,idx)=>[id, idx]));
+    comp.behaviors.forEach(b => { b.order = map.get(b.id); });
+    save();
+    // queue update
+    const n = findNext(); setCursor(n.ci, n.bi);
+  }
+
+  function renderAll(){ renderRateCard(); renderSummary(); }
+
+  /*** EXPORT MARKDOWN ***/
+  function toMarkdown(){
+    const lines = [];
+    lines.push('# Behavior Rating Summary');
+    const totals = getTotals();
+    lines.push(`- **Completion:** ${totals.rated}/${totals.total} behaviors rated`);
+    lines.push(`- **Strength threshold:** ${state.thresholds.strength}% Always`);
+    lines.push(`- **Development threshold:** ${state.thresholds.dev}% Rarely`);
+    lines.push('');
+
+    const orderGroups = [
+      { key: 'strength', title: '## Strengths' },
+      { key: 'development', title: '## Development Opportunities' },
+      { key: 'mixed', title: '## Mixed' },
+      { key: 'unrated', title: '## Unrated' },
+    ];
+
+    const groupMap = { strength:[], development:[], mixed:[], unrated:[] };
+    for(const c of state.competencies){ groupMap[categorize(c, state.thresholds)].push(c); }
+
+    const sortRank = { always:0, sometimes:1, rarely:2, null:3 };
+
+    for(const g of orderGroups){
+      const list = groupMap[g.key];
+      if(!list.length) continue;
+      lines.push(g.title);
+      for(const c of list){
+        const st = compStats(c);
+        lines.push(`\n### ${c.name}`);
+        lines.push(`- Rated ${st.rated}/${st.total} • Always ${st.counts.always} (${st.pct.always}%) • Sometimes ${st.counts.sometimes} (${st.pct.sometimes}%) • Rarely ${st.counts.rarely} (${st.pct.rarely}%)`);
+        lines.push('');
+        // behaviors sorted by rating (always→sometimes→rarely→unrated), tie-breaker by importance
+        const behs = [...c.behaviors].sort((a,b)=>{
+          const ra = a.rating? sortRank[a.rating] : 3;
+          const rb = b.rating? sortRank[b.rating] : 3;
+          if(ra!==rb) return ra-rb; return a.order - b.order;
+        });
+        for(const b of behs){
+          const tag = b.rating ? (b.rating==='always'? '✅ Always' : b.rating==='sometimes'? '🟡 Sometimes' : '🔴 Rarely') : '⬜ Unrated';
+          lines.push(`- ${tag}: ${escapeMd(b.text)}`);
+        }
+        lines.push('');
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /*** HELPERS ***/
+  function escapeHtml(str){ return String(str).replace(/[&<>\"]/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s])); }
+  function escapeMd(str){ return String(str).replace(/[\*_|`~]/g, m=>"\\"+m); }
+
+  /*** EVENTS ***/
+  els.btnLoad.addEventListener('click', ()=> loadFromCSV(els.csvInput.value));
+  els.btnSample.addEventListener('click', loadSample);
+  els.btnReset.addEventListener('click', ()=>{
+    if(confirm('Clear all data and reset?')){
+      localStorage.removeItem(STORAGE_KEY);
+      state = { competencies: [], orderMode:'byCompetency', cursor:{compIdx:0,behIdx:0,history:[]}, thresholds:{strength:70, dev:40}, sortByRatingInSummary:true };
+      renderAll();
+    }
+  });
+  els.btnCopyMd.addEventListener('click', async ()=>{
+    const md = toMarkdown();
+    try{ await navigator.clipboard.writeText(md); toast('Markdown copied to clipboard'); }
+    catch(e){ downloadText('behavior-summary.md', md); }
+  });
+
+  els.btnAlways.addEventListener('click', ()=>rateCurrent('always'));
+  els.btnSometimes.addEventListener('click', ()=>rateCurrent('sometimes'));
+  els.btnRarely.addEventListener('click', ()=>rateCurrent('rarely'));
+
+  els.btnBack.addEventListener('click', backOne);
+  els.btnSkip.addEventListener('click', skipOne);
+  els.btnClear.addEventListener('click', clearCurrent);
+
+  document.addEventListener('keydown', (e)=>{
+    const tag = (document.activeElement?.tagName||'').toLowerCase();
+    const typing = tag==='input' || tag==='textarea';
+    if(typing) return;
+    if(e.key==='j' || e.key==='J'){ e.preventDefault(); rateCurrent('always'); }
+    if(e.key==='k' || e.key==='K'){ e.preventDefault(); rateCurrent('sometimes'); }
+    if(e.key==='l' || e.key==='L'){ e.preventDefault(); rateCurrent('rarely'); }
+    if(e.key==='b' || e.key==='B'){ e.preventDefault(); backOne(); }
+    if(e.key==='s' || e.key==='S'){ e.preventDefault(); skipOne(); }
+    if(e.key==='u' || e.key==='U' || e.key==='Backspace'){ e.preventDefault(); clearCurrent(); }
+  });
+
+  els.thrStrength.addEventListener('input', ()=>{
+    state.thresholds.strength = parseInt(els.thrStrength.value,10);
+    els.tStrength.textContent = state.thresholds.strength;
+    save(); renderSummary();
+  });
+  els.thrDev.addEventListener('input', ()=>{
+    state.thresholds.dev = parseInt(els.thrDev.value,10);
+    els.tDev.textContent = state.thresholds.dev;
+    save(); renderSummary();
+  });
+  els.toggleSortByRating.addEventListener('change', ()=>{
+    state.sortByRatingInSummary = !!els.toggleSortByRating.checked;
+    save(); renderSummary();
+  });
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+  }
+
+  // Simple toast
+  let toastEl=null, toastTimer=null;
+  function toast(msg){
+    if(!toastEl){ toastEl = document.createElement('div'); toastEl.style.position='fixed'; toastEl.style.bottom='16px'; toastEl.style.right='16px'; toastEl.style.background='#0b1220'; toastEl.style.border='1px solid #1f2a38'; toastEl.style.padding='10px 12px'; toastEl.style.borderRadius='10px'; toastEl.style.boxShadow='0 6px 24px rgba(0,0,0,.35)'; document.body.appendChild(toastEl);} 
+    toastEl.textContent = msg; toastEl.style.opacity='1';
+    clearTimeout(toastTimer); toastTimer = setTimeout(()=>toastEl.style.opacity='0', 1800);
+  }
+
+  // Initial render
+  renderAll();
+})();
+</script>
+</body>
+</html>
